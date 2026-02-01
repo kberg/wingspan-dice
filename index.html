@@ -392,6 +392,7 @@
 </div>
 
 <script>
+  // Base game die faces: 4 single-food faces, 1 rodent, and 1 worm/seed combo.
   var BASE_FACES = [
     { id: 'worm',      icon: '🪱', label: 'Worm' },
     { id: 'seed',      icon: '🌾', label: 'Seed' },
@@ -401,6 +402,7 @@
     { id: 'worm+seed', icon: null, label: 'Worm / Seed', combo: ['🪱', '🌾'] },
   ];
 
+  // Oceania expansion die faces: seed and fruit become combo faces with nectar.
   var NECTAR_FACES = [
     { id: 'worm',         icon: '🪱', label: 'Worm' },
     { id: 'seed+nectar',  icon: null, label: 'Seed / Nectar', combo: ['🌾', '🌺'] },
@@ -410,28 +412,42 @@
     { id: 'worm+seed',    icon: null, label: 'Worm / Seed', combo: ['🪱', '🌾'] },
   ];
 
-  var nectarEnabled = false;
-  var dice = [];
-  var outside = [];
+  var nectarEnabled = false; // Whether the Oceania expansion toggle is on.
+  var dice = [];             // Faces currently in the bird feeder.
+  var outside = [];          // Faces selected (taken out of the feeder).
 
+  // Cache DOM references to the 5 pre-built die elements in each area,
+  // as well as the empty-state messages. These are static HTML elements
+  // that are shown/hidden and updated in place rather than recreated.
   var trayDice = document.querySelectorAll('#dice-area .die');
   var trayEmpty = document.querySelector('#dice-area .empty-msg');
   var outsideDice = document.querySelectorAll('#outside-dice .die');
   var outsideEmpty = document.querySelector('#outside-dice .empty-msg');
   var outsideArea = document.getElementById('outside-area');
 
+  // Returns the active face set based on whether Oceania nectar is enabled.
   function getFaces() {
     return nectarEnabled ? NECTAR_FACES : BASE_FACES;
   }
 
+  // Returns a random face from the active face set.
   function rollDie() {
     var faces = getFaces();
     return faces[Math.floor(Math.random() * faces.length)];
   }
 
+  // Updates a pre-existing die DOM element to display a given face.
+  // Toggles is-single/is-combo classes to show the correct icon layout,
+  // and sets the text content of the icon and label elements.
+  // When animate is true, the rolling CSS animation is triggered.
   function applyFace(el, face, animate) {
     el.classList.remove('hidden', 'rolling', 'removing', 'is-single', 'is-combo');
     if (animate) {
+      // Reading offsetWidth forces a browser reflow. This is necessary because
+      // removing and re-adding the 'rolling' class in the same frame would be
+      // batched by the browser and the CSS animation would not retrigger.
+      // The reflow between the remove and add makes the browser treat it as
+      // a fresh animation.
       void el.offsetWidth;
       el.classList.add('rolling');
     }
@@ -447,11 +463,15 @@
     el.querySelector('.label').textContent = face.label;
   }
 
+  // Toggles the Oceania expansion mode. Does not reroll existing dice;
+  // the new face set takes effect on the next roll.
   function toggleNectar() {
     nectarEnabled = !nectarEnabled;
     document.getElementById('nectar-toggle').classList.toggle('active', nectarEnabled);
   }
 
+  // Resets the entire dice tray: rolls 5 fresh dice into the feeder
+  // and clears the selected dice area.
   function rerollAll() {
     dice = Array.from({ length: 5 }, rollDie);
     outside = [];
@@ -459,6 +479,10 @@
     updateStatus('');
   }
 
+  // Removes a die from the feeder at the given index and moves it to
+  // the selected area. Plays a shrink-out animation (300ms) before
+  // updating state. If the feeder becomes empty, automatically rerolls
+  // all 5 dice and clears selected after a 600ms delay.
   function takeDie(index) {
     trayDice[index].classList.add('removing');
 
@@ -479,15 +503,20 @@
     }, 300);
   }
 
+  // Rerolls all selected dice in place (they stay outside the feeder).
   function rerollOutside() {
     outside = outside.map(function() { return rollDie(); });
     renderOutside(true);
   }
 
+  // Sets the status message shown above the feeder dice.
   function updateStatus(msg) {
     document.getElementById('status').textContent = msg;
   }
 
+  // Syncs the feeder's 5 pre-built die elements with the dice[] array.
+  // Dice beyond the array length are hidden. Shows the empty message
+  // when no dice remain.
   function renderTray(animate) {
     for (var i = 0; i < 5; i++) {
       if (i < dice.length) {
@@ -499,6 +528,9 @@
     trayEmpty.classList.toggle('visible', dice.length === 0);
   }
 
+  // Syncs the selected area's 5 pre-built die elements with the outside[]
+  // array. Toggles the 'empty' class on the container, which controls
+  // visibility of the reroll button via CSS.
   function renderOutside(animate) {
     for (var i = 0; i < 5; i++) {
       if (i < outside.length) {
@@ -511,6 +543,7 @@
     outsideArea.classList.toggle('empty', outside.length === 0);
   }
 
+  // Renders both the feeder tray and the selected dice area.
   function renderAll(animate) {
     renderTray(animate);
     renderOutside(animate);
