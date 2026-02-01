@@ -431,7 +431,10 @@
 
   function applyFace(el, face, animate) {
     el.classList.remove('hidden', 'rolling', 'removing', 'is-single', 'is-combo');
-    if (animate) el.classList.add('rolling');
+    if (animate) {
+      void el.offsetWidth;
+      el.classList.add('rolling');
+    }
 
     if (face.combo) {
       el.classList.add('is-combo');
