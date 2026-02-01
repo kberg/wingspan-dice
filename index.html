@@ -105,6 +105,7 @@
     max-width: 298px;
     margin-left: auto;
     margin-right: auto;
+    align-content: start;
   }
 
   .die {
@@ -123,6 +124,8 @@
     user-select: none;
     position: relative;
   }
+
+  .die.hidden { display: none; }
 
   .die:hover {
     transform: translateY(-3px);
@@ -154,6 +157,11 @@
     color: #5a5040;
     font-weight: bold;
   }
+
+  .die .single-icon { display: none; }
+  .die .combo { display: none; }
+  .die.is-single .single-icon { display: block; }
+  .die.is-combo .combo { display: flex; }
 
   .die.removing {
     opacity: 0;
@@ -232,8 +240,10 @@
     gap: 14px;
     justify-content: center;
     min-height: 90px;
-    align-items: center;
+    align-items: start;
+    align-content: start;
     margin-bottom: 14px;
+    flex: 1;
   }
 
   .outside-dice .die {
@@ -245,16 +255,14 @@
     box-shadow: 2px 3px 6px rgba(0,0,0,0.3);
   }
 
-  .outside-dice {
-    flex: 1;
-  }
-
   .outside-controls {
     display: flex;
     gap: 10px;
     justify-content: center;
     flex-wrap: wrap;
   }
+
+  .outside-area.empty .outside-controls { display: none; }
 
   .empty-msg {
     color: #a09080;
@@ -263,12 +271,16 @@
     padding: 30px 0;
     text-align: center;
     width: 100%;
+    display: none;
   }
 
   .outside-dice .empty-msg {
     padding: 10px 0;
     color: #6a8a58;
   }
+
+  .dice-area .empty-msg.visible { display: block; }
+  .outside-dice .empty-msg.visible { display: block; }
 
   .info {
     margin-top: 16px;
@@ -305,7 +317,34 @@
 <div class="tray">
   <div class="tray-label">Bird Feeder</div>
   <div class="status" id="status"></div>
-  <div class="dice-area" id="dice-area"></div>
+  <div class="dice-area" id="dice-area">
+    <div class="die hidden" data-index="0" onclick="takeDie(0)">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="1" onclick="takeDie(1)">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="2" onclick="takeDie(2)">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="3" onclick="takeDie(3)">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="4" onclick="takeDie(4)">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="empty-msg">No dice in the feeder</div>
+  </div>
   <div class="controls">
     <button onclick="rerollAll()">Reset Dice Tray</button>
   </div>
@@ -313,8 +352,35 @@
 
 <div class="outside-area empty" id="outside-area">
   <div class="outside-label">Selected Dice</div>
-  <div class="outside-dice" id="outside-dice"></div>
-  <div class="outside-controls" id="outside-controls" style="display:none;">
+  <div class="outside-dice" id="outside-dice">
+    <div class="die hidden" data-index="0">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="1">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="2">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="3">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="die hidden" data-index="4">
+      <div class="single-icon"><span class="icon"></span></div>
+      <div class="combo"><span class="icon c0"></span><span class="slash">/</span><span class="icon c1"></span></div>
+      <div class="label"></div>
+    </div>
+    <div class="empty-msg visible">No dice selected yet</div>
+  </div>
+  <div class="outside-controls">
     <button onclick="rerollOutside()">Reroll Selected Dice</button>
   </div>
 </div>
@@ -348,6 +414,12 @@
   var dice = [];
   var outside = [];
 
+  var trayDice = document.querySelectorAll('#dice-area .die');
+  var trayEmpty = document.querySelector('#dice-area .empty-msg');
+  var outsideDice = document.querySelectorAll('#outside-dice .die');
+  var outsideEmpty = document.querySelector('#outside-dice .empty-msg');
+  var outsideArea = document.getElementById('outside-area');
+
   function getFaces() {
     return nectarEnabled ? NECTAR_FACES : BASE_FACES;
   }
@@ -355,6 +427,21 @@
   function rollDie() {
     var faces = getFaces();
     return faces[Math.floor(Math.random() * faces.length)];
+  }
+
+  function applyFace(el, face, animate) {
+    el.classList.remove('hidden', 'rolling', 'removing', 'is-single', 'is-combo');
+    if (animate) el.classList.add('rolling');
+
+    if (face.combo) {
+      el.classList.add('is-combo');
+      el.querySelector('.c0').textContent = face.combo[0];
+      el.querySelector('.c1').textContent = face.combo[1];
+    } else {
+      el.classList.add('is-single');
+      el.querySelector('.single-icon .icon').textContent = face.icon;
+    }
+    el.querySelector('.label').textContent = face.label;
   }
 
   function toggleNectar() {
@@ -370,8 +457,7 @@
   }
 
   function takeDie(index) {
-    var els = document.querySelectorAll('#dice-area .die');
-    if (els[index]) els[index].classList.add('removing');
+    trayDice[index].classList.add('removing');
 
     setTimeout(function() {
       var taken = dice.splice(index, 1)[0];
@@ -395,62 +481,31 @@
     renderOutside(true);
   }
 
-
   function updateStatus(msg) {
     document.getElementById('status').textContent = msg;
   }
 
-  function renderDieHTML(face) {
-    if (face.combo) {
-      return '<div class="combo">' +
-        face.combo.map(function(c) { return '<span class="icon">' + c + '</span>'; }).join('<span class="slash">/</span>') +
-        '</div>' +
-        '<div class="label">' + face.label + '</div>';
-    }
-    return '<div class="icon">' + face.icon + '</div>' +
-      '<div class="label">' + face.label + '</div>';
-  }
-
   function renderTray(animate) {
-    var area = document.getElementById('dice-area');
-    area.innerHTML = '';
-
-    if (dice.length === 0) {
-      area.innerHTML = '<div class="empty-msg">No dice in the feeder</div>';
-      return;
+    for (var i = 0; i < 5; i++) {
+      if (i < dice.length) {
+        applyFace(trayDice[i], dice[i], animate);
+      } else {
+        trayDice[i].classList.add('hidden');
+      }
     }
-
-    dice.forEach(function(face, i) {
-      var el = document.createElement('div');
-      el.className = 'die' + (animate ? ' rolling' : '');
-      el.onclick = function() { takeDie(i); };
-      el.innerHTML = renderDieHTML(face);
-      area.appendChild(el);
-    });
+    trayEmpty.classList.toggle('visible', dice.length === 0);
   }
 
   function renderOutside(animate) {
-    var area = document.getElementById('outside-dice');
-    var container = document.getElementById('outside-area');
-    var controls = document.getElementById('outside-controls');
-    area.innerHTML = '';
-
-    if (outside.length === 0) {
-      container.classList.add('empty');
-      controls.style.display = 'none';
-      area.innerHTML = '<div class="empty-msg">No dice selected yet</div>';
-      return;
+    for (var i = 0; i < 5; i++) {
+      if (i < outside.length) {
+        applyFace(outsideDice[i], outside[i], animate);
+      } else {
+        outsideDice[i].classList.add('hidden');
+      }
     }
-
-    container.classList.remove('empty');
-    controls.style.display = 'flex';
-
-    outside.forEach(function(face) {
-      var el = document.createElement('div');
-      el.className = 'die' + (animate ? ' rolling' : '');
-      el.innerHTML = renderDieHTML(face);
-      area.appendChild(el);
-    });
+    outsideEmpty.classList.toggle('visible', outside.length === 0);
+    outsideArea.classList.toggle('empty', outside.length === 0);
   }
 
   function renderAll(animate) {
