@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wingspan Dice Tray</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #2c4a1e;
+    color: #f5f0e1;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  h1 {
+    font-size: 1.8rem;
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+  }
+
+  .subtitle {
+    font-size: 0.9rem;
+    opacity: 0.7;
+    margin-bottom: 24px;
+  }
+
+  .tray {
+    background: #3b2a1a;
+    border: 4px solid #5a3d24;
+    border-radius: 16px;
+    padding: 30px 24px 24px;
+    box-shadow: inset 0 2px 12px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.4);
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .dice-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    min-height: 100px;
+    margin-bottom: 20px;
+  }
+
+  .die {
+    width: 90px;
+    height: 90px;
+    background: #eee8d5;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border: 3px solid #ccc4b0;
+    box-shadow: 2px 3px 6px rgba(0,0,0,0.3);
+    transition: transform 0.15s, box-shadow 0.15s, opacity 0.3s;
+    user-select: none;
+    position: relative;
+  }
+
+  .die:hover {
+    transform: translateY(-3px);
+    box-shadow: 2px 6px 12px rgba(0,0,0,0.4);
+  }
+
+  .die:active { transform: scale(0.95); }
+
+  .die .icon { font-size: 2rem; line-height: 1; }
+  .die .combo .icon { font-size: 1.4rem; }
+
+  .die .label {
+    font-size: 0.65rem;
+    color: #5a5040;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .die .combo {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .die .combo .slash {
+    font-size: 1rem;
+    color: #5a5040;
+    font-weight: bold;
+  }
+
+  .die.removing {
+    opacity: 0;
+    transform: scale(0.5);
+    pointer-events: none;
+  }
+
+  .die.rolling {
+    animation: roll 0.4s ease-out;
+  }
+
+  @keyframes roll {
+    0%   { transform: rotateX(0deg) scale(0.8); opacity: 0.5; }
+    50%  { transform: rotateX(180deg) scale(1.05); }
+    100% { transform: rotateX(360deg) scale(1); opacity: 1; }
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  button {
+    background: #6b8f3c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+
+  button:hover { background: #7da844; }
+  button:disabled { background: #555; cursor: default; opacity: 0.5; }
+
+  button.secondary {
+    background: #8b6f47;
+  }
+  button.secondary:hover { background: #a07d4f; }
+
+  .info {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 0.8rem;
+    opacity: 0.6;
+    line-height: 1.5;
+  }
+
+  .status {
+    text-align: center;
+    font-size: 0.85rem;
+    margin-bottom: 14px;
+    min-height: 1.2em;
+    color: #d4c9a8;
+  }
+
+  .empty-msg {
+    color: #a09080;
+    font-style: italic;
+    font-size: 0.95rem;
+    padding: 30px 0;
+    text-align: center;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<h1>Wingspan Bird Feeder</h1>
+<p class="subtitle">Dice Tray Simulator</p>
+
+<div class="tray">
+  <div class="status" id="status"></div>
+  <div class="dice-area" id="dice-area"></div>
+  <div class="controls">
+    <button id="reroll-btn" onclick="rerollAll()">Reroll All Dice</button>
+    <button class="secondary" onclick="resetTray()">Reset Tray</button>
+  </div>
+</div>
+
+<div class="info">
+  Click a die to take that food from the feeder.<br>
+  All dice are rerolled when all remaining faces match or only 1 remains.
+</div>
+
+<script>
+  const FACES = [
+    { id: 'worm',    icon: '🪱', label: 'Invertebrate' },
+    { id: 'seed',    icon: '🌾', label: 'Seed' },
+    { id: 'fish',    icon: '🐟', label: 'Fish' },
+    { id: 'berry',   icon: '🫐', label: 'Fruit' },
+    { id: 'mouse',   icon: '🐀', label: 'Rodent' },
+    { id: 'worm+seed', icon: null, label: 'Worm / Seed', combo: ['🪱', '🌾'] },
+  ];
+
+  let dice = [];
+
+  function rollDie() {
+    return FACES[Math.floor(Math.random() * FACES.length)];
+  }
+
+  function resetTray() {
+    dice = Array.from({ length: 5 }, rollDie);
+    render(true);
+    updateStatus('');
+  }
+
+  function allSameFace(arr) {
+    if (arr.length <= 1) return true;
+    return arr.every(d => d.id === arr[0].id);
+  }
+
+  function checkAutoReroll() {
+    if (dice.length > 0 && allSameFace(dice)) {
+      updateStatus('All dice show the same face — rerolling!');
+      setTimeout(() => {
+        dice = Array.from({ length: dice.length }, rollDie);
+        render(true);
+        if (allSameFace(dice)) {
+          checkAutoReroll();
+        } else {
+          updateStatus('');
+        }
+      }, 600);
+      return true;
+    }
+    return false;
+  }
+
+  function takeDie(index) {
+    const el = document.querySelectorAll('.die')[index];
+    if (el) el.classList.add('removing');
+
+    setTimeout(() => {
+      dice.splice(index, 1);
+      render(false);
+
+      if (dice.length === 0) {
+        updateStatus('Feeder is empty. Reroll or reset to continue.');
+      } else {
+        checkAutoReroll();
+      }
+    }, 300);
+  }
+
+  function rerollAll() {
+    dice = Array.from({ length: 5 }, rollDie);
+    render(true);
+    updateStatus('');
+    setTimeout(() => {
+      if (allSameFace(dice)) checkAutoReroll();
+    }, 50);
+  }
+
+  function updateStatus(msg) {
+    document.getElementById('status').textContent = msg;
+  }
+
+  function render(animate) {
+    const area = document.getElementById('dice-area');
+    area.innerHTML = '';
+
+    if (dice.length === 0) {
+      area.innerHTML = '<div class="empty-msg">No dice in the feeder</div>';
+      return;
+    }
+
+    dice.forEach((face, i) => {
+      const el = document.createElement('div');
+      el.className = 'die' + (animate ? ' rolling' : '');
+      el.onclick = () => takeDie(i);
+
+      if (face.combo) {
+        el.innerHTML =
+          '<div class="combo">' +
+            face.combo.map(c => '<span class="icon">' + c + '</span>').join('<span class="slash">/</span>') +
+          '</div>' +
+          '<div class="label">' + face.label + '</div>';
+      } else {
+        el.innerHTML =
+          '<div class="icon">' + face.icon + '</div>' +
+          '<div class="label">' + face.label + '</div>';
+      }
+
+      area.appendChild(el);
+    });
+
+    document.getElementById('reroll-btn').disabled = false;
+  }
+
+  resetTray();
+</script>
+</body>
+</html>
